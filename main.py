@@ -3,19 +3,14 @@ import folium
 from streamlit_folium import st_folium
 import numpy as np
 
-st.set_page_config(layout="wide")
-st.title("🪐 10억 년 뒤 우주의 모습: 은하 팽창 시뮬레이션")
+# ------------------------
+# 시뮬레이션 기본 설정
+# ------------------------
 
-# 허블 상수 (간단히 사용)
-H0 = 70  # km/s/Mpc
+H0 = 70  # 허블 상수 (km/s/Mpc)
+G_MAP_CENTER = [50.0, -120.0]  # 지도 중심
 
-# 10억 년을 초 단위로
-years = st.slider("미래 시점 (단위: 억 년)", 0, 100, 10)
-delta_time_sec = years * 1e8 * 3.154e7  # 초
-
-st.write(f"🕒 시뮬레이션 시점: {years}억 년 뒤")
-
-# 가상의 은하 초기 위치들 (위도/경도처럼 단순 좌표계에 배치)
+# 은하 초기 위치 데이터 (위도, 경도)
 galaxies = {
     "Andromeda": [51.0, -114.0],
     "Messier 81": [48.5, -123.0],
@@ -24,34 +19,79 @@ galaxies = {
     "Cartwheel": [49.0, -115.5],
 }
 
-# 지도 중심
-m = folium.Map(location=[50, -120], zoom_start=5, tiles="cartodb dark_matter")
+# ------------------------
+# Streamlit UI
+# ------------------------
 
-# 은하 위치 계산 및 표시
+st.set_page_config(layout="wide")
+st.title("🪐 10억 년 뒤 우주의 은하 이동 시뮬레이션")
+
+years = st.slider("미래 시점 (단위: 억 년)", min_value=1, max_value=100, value=10, step=1)
+delta_time_sec = years * 1e8 * 3.154e7  # 억 년을 초로 변환
+
+st.markdown(f"**🕒 시점:** {years}억 년 뒤 &nbsp;&nbsp;&nbsp;🧮 시뮬레이션 시간: {int(delta_time_sec):,}초")
+
+# ------------------------
+# 지도 생성
+# ------------------------
+
+m = folium.Map(location=G_MAP_CENTER, zoom_start=5, tiles="cartodb dark_matter")
+
 for name, (lat, lon) in galaxies.items():
-    # 초기 거리 (임의 단위, Mpc)
-    initial_distance = np.sqrt((lat - 50)**2 + (lon + 120)**2)
+    # 현재 위치 기준 거리 (단순 유클리드 거리)
+    d_lat = lat - G_MAP_CENTER[0]
+    d_lon = lon - G_MAP_CENTER[1]
+    initial_distance = np.sqrt(d_lat**2 + d_lon**2)
 
-    # 허블 법칙으로 거리 증가량 계산
-    # v = H0 * d → Δd = v * t
-    velocity = H0 * initial_distance * 1000  # km/s
-    delta_d_km = velocity * delta_time_sec  # km
-    delta_deg = delta_d_km / 1e9  # 간단하게 스케일 맞추기 (지도 좌표용)
+    # 허블 법칙: v = H0 * d
+    velocity_km_s = H0 * initial_distance * 1000  # km/s
+    delta_d_km = velocity_km_s * delta_time_sec  # 총 거리 이동 (km)
+    delta_deg = delta_d_km / 1e9  # 위도/경도로 변환하는 단순 스케일
 
-    # 은하 이동 (단순하게 오른쪽 위로 밀어냄)
-    new_lat = lat + delta_deg * 0.01
-    new_lon = lon + delta_deg * 0.01
+    # 방향 벡터 계산
+    if initial_distance == 0:
+        dir_lat = 0
+        dir_lon = 0
+    else:
+        dir_lat = d_lat / initial_distance
+        dir_lon = d_lon / initial_distance
+
+    # 새로운 위치 계산
+    new_lat = lat + delta_deg * dir_lat * 0.2
+    new_lon = lon + delta_deg * dir_lon * 0.2
+
+    # 시각화
+    folium.CircleMarker(
+        location=[lat, lon],
+        radius=5,
+        color="orange",
+        fill=True,
+        fill_opacity=0.6,
+        popup=f"{name} (현재 위치)"
+    ).add_to(m)
 
     folium.CircleMarker(
         location=[new_lat, new_lon],
-        radius=6,
+        radius=7,
         color="cyan",
         fill=True,
-        fill_opacity=0.7,
-        popup=f"{name} (거리 증가: {int(delta_d_km/1e6):,} million km)"
+        fill_opacity=0.9,
+        popup=f"{name} (미래 위치)\n이동 거리: {int(delta_d_km / 1e6):,}M km"
     ).add_to(m)
 
-# 지도 출력
-st_data = st_folium(m, width=900, height=600)
+    folium.PolyLine(
+        locations=[[lat, lon], [new_lat, new_lon]],
+        color="white",
+        weight=1.5,
+        opacity=0.6,
+        tooltip=f"{name} 이동 방향"
+    ).add_to(m)
+
+# ------------------------
+# Streamlit에 지도 출력
+# ------------------------
+
+st_data = st_folium(m, width=1000, height=600)
+
 
    
