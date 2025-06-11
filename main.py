@@ -1,81 +1,51 @@
 import streamlit as st
-import plotly.graph_objects as go
-import numpy as np
 
-st.set_page_config(page_title="10억 년 뒤 우주 시뮬레이션", layout="centered")
-st.title("🌌 10억 년 뒤 지구에서 본 우주 시뮬레이션")
+st.set_page_config(page_title="10억 년 뒤 우주 시뮬레이션")
+st.title("🌌 10억 년 뒤 우주의 모습 시뮬레이션")
 st.markdown("""
-**허블 법칙**을 기반으로, 미래에 은하들이 어떻게 멀어지는지 2D 평면상에서 시각화합니다.  
-(원형 확산 형태로 팽창하며, 방향은 고정된 채 거리만 증가합니다)
+이 시뮬레이션은 **허블의 법칙**을 기반으로 하여,  
+미래에 은하들이 지구로부터 얼마나 멀어지는지를 계산합니다.
+
+> 허블 상수 (H₀): `70 km/s/Mpc`  
+> 시간: 1억 년 단위로 조절 가능  
+> 거리 단위: Mpc (메가파섹) ≈ 326만 광년
 """)
 
-# 설정
-H0 = 70  # 허블 상수 (km/s/Mpc)
-years = st.slider("시뮬레이션할 시간 (억 년 후)", 1, 100, 10)
-delta_t_sec = years * 1e8 * 3.154e7
+# --- 설정값 ---
+H0 = 70  # km/s/Mpc
+YEAR_SEC = 3.154e7  # 1년 = 초
+PARSEC_KM = 3.086e13  # 1pc = km (주의: 여긴 kpc, Mpc 단위로 변환함)
 
-# 초기 은하 데이터: [이름, 각도(°), 거리(Mpc)]
-galaxies = [
-    ("안드로메다", 20, 30),
-    ("M81", 60, 50),
-    ("소용돌이 은하", 120, 40),
-    ("솜브레로 은하", 200, 35),
-    ("카트휠 은하", 310, 25),
-]
+# --- 시뮬레이션 시간 입력 ---
+years = st.slider("미래 시간 설정 (억 년)", 1, 100, 10)
+delta_time = years * 1e8 * YEAR_SEC  # 초
 
-# 좌표 계산
-galaxy_data = []
-for name, angle_deg, dist_mpc in galaxies:
-    theta_rad = np.deg2rad(angle_deg)
-    vx = H0 * dist_mpc * 1000  # 속도 (km/s)
-    delta_km = vx * delta_t_sec
-    delta_mpc = delta_km / 3.086e19
-    new_dist = dist_mpc + delta_mpc
+# --- 은하 데이터 (각도는 제외하고 이름 + 초기 거리만) ---
+galaxies = {
+    "안드로메다": 0.78,
+    "M81": 3.6,
+    "소용돌이 은하": 7,
+    "솜브레로 은하": 9,
+    "카트휠 은하": 12,
+}
 
-    x_now = dist_mpc * np.cos(theta_rad)
-    y_now = dist_mpc * np.sin(theta_rad)
-    x_future = new_dist * np.cos(theta_rad)
-    y_future = new_dist * np.sin(theta_rad)
+# --- 결과 테이블 ---
+st.markdown(f"### 🧮 {years}억 년 뒤 예상 거리")
 
-    galaxy_data.append((name, x_now, y_now, x_future, y_future))
+st.markdown("| 은하 | 현재 거리 (Mpc) | 예상 거리 (Mpc) | 이동 거리 (Mpc) |")
+st.markdown("|------|------------------|------------------|------------------|")
 
-# Plotly 시각화
-fig = go.Figure()
+for name, dist_mpc in galaxies.items():
+    # 허블 법칙 → 속도 = H0 × 거리
+    velocity_km_s = H0 * dist_mpc * 1000  # km/s
+    moved_km = velocity_km_s * delta_time
+    moved_mpc = moved_km / (1e6 * PARSEC_KM)  # km → Mpc
+    future_distance = dist_mpc + moved_mpc
 
-for name, x0, y0, x1, y1 in galaxy_data:
-    # 현재 위치
-    fig.add_trace(go.Scatter(x=[x0], y=[y0], mode='markers+text',
-                             name=f"{name} (현재)",
-                             text=[name], textposition="top center",
-                             marker=dict(color="orange", size=10)))
-    # 미래 위치
-    fig.add_trace(go.Scatter(x=[x1], y=[y1], mode='markers',
-                             name=f"{name} (미래)",
-                             marker=dict(color="cyan", size=10)))
-    # 이동 방향선
-    fig.add_trace(go.Scatter(x=[x0, x1], y=[y0, y1],
-                             mode='lines',
-                             line=dict(color='gray', dash='dash'),
-                             showlegend=False))
+    st.markdown(f"| {name} | {dist_mpc:.2f} | {future_distance:.2f} | {moved_mpc:.2f} |")
 
-# 그래프 설정
-fig.update_layout(
-    title=f"{years}억 년 후 우주의 은하 위치 변화 (허블 팽창 시뮬레이션)",
-    xaxis_title="X (Mpc)",
-    yaxis_title="Y (Mpc)",
-    width=700,
-    height=700,
-    showlegend=True,
-    template="plotly_dark",
-    margin=dict(l=40, r=40, t=60, b=40),
-)
-
-st.plotly_chart(fig)
-
-st.markdown(f"""
+st.markdown("""
 ---
-#### 📌 참고:
-- 허블 상수: **{H0} km/s/Mpc**
-- 시뮬레이션 시간: **{years}억 년** → 약 {int(delta_t_sec):,}초
-- 거리 단위: Mpc (메가파섹, 약 326만 광년)
+
+🛰️ 이 계산은 단순한 허블 팽창 모델을 사용하므로, 실제 우주 진화는 **중력/암흑에너지** 등 복잡한 요인에 따라 달라질 수 있습니다.
 """)
