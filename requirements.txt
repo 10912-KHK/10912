@@ -1,2 +1,2 @@
-follum
-streamlit_follum
+folium
+streamlit_folium
