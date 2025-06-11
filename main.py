@@ -1,57 +1,57 @@
 import streamlit as st
 import folium
 from streamlit_folium import st_folium
+import numpy as np
 
-# 여행지 데이터 정의
-places = {
-    "밴프 국립공원": {
-        "location": [51.4968, -115.9281],
-        "description": "로키 산맥 속 아름다운 자연 경관을 감상할 수 있는 밴프 국립공원은 하이킹, 온천, 겨울 스포츠로 유명합니다.",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Moraine_Lake_17092005.jpg/1024px-Moraine_Lake_17092005.jpg"
-    },
-    "퀘벡 시티": {
-        "location": [46.8139, -71.2082],
-        "description": "프랑스풍 건축 양식과 고풍스러운 거리로 유명한 퀘벡 시티는 캐나다에서 가장 유럽적인 도시로 꼽힙니다.",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/41/Quebec_City_from_Levis.jpg/1024px-Quebec_City_from_Levis.jpg"
-    },
-    "토론토": {
-        "location": [43.651070, -79.347015],
-        "description": "캐나다 최대의 도시 토론토는 CN 타워, 다양한 문화 공연, 쇼핑, 음식으로 가득한 다채로운 도시입니다.",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Toronto_Skyline.jpg/1024px-Toronto_Skyline.jpg"
-    },
-    "밴쿠버": {
-        "location": [49.2827, -123.1207],
-        "description": "바다와 산이 어우러진 밴쿠버는 아름다운 자연 환경과 다양한 액티비티로 많은 관광객에게 인기입니다.",
-        "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Vancouver_Skyline.jpg/1024px-Vancouver_Skyline.jpg"
-    }
+st.set_page_config(layout="wide")
+st.title("🪐 10억 년 뒤 우주의 모습: 은하 팽창 시뮬레이션")
+
+# 허블 상수 (간단히 사용)
+H0 = 70  # km/s/Mpc
+
+# 10억 년을 초 단위로
+years = st.slider("미래 시점 (단위: 억 년)", 0, 100, 10)
+delta_time_sec = years * 1e8 * 3.154e7  # 초
+
+st.write(f"🕒 시뮬레이션 시점: {years}억 년 뒤")
+
+# 가상의 은하 초기 위치들 (위도/경도처럼 단순 좌표계에 배치)
+galaxies = {
+    "Andromeda": [51.0, -114.0],
+    "Messier 81": [48.5, -123.0],
+    "Whirlpool": [52.0, -117.0],
+    "Sombrero": [50.0, -122.0],
+    "Cartwheel": [49.0, -115.5],
 }
 
-# 스트림릿 앱 구성
-st.set_page_config(page_title="캐나다 여행 가이드", layout="wide")
-st.title("🇨🇦 캐나다 여행 가이드")
-st.markdown("캐나다의 주요 관광지를 지도와 함께 쉽게 살펴보세요!")
+# 지도 중심
+m = folium.Map(location=[50, -120], zoom_start=5, tiles="cartodb dark_matter")
 
-# 사이드바에서 여행지 선택
-place_names = list(places.keys())
-selected_place = st.sidebar.selectbox("여행지를 선택하세요", place_names)
+# 은하 위치 계산 및 표시
+for name, (lat, lon) in galaxies.items():
+    # 초기 거리 (임의 단위, Mpc)
+    initial_distance = np.sqrt((lat - 50)**2 + (lon + 120)**2)
 
-# 선택한 여행지 정보 표시
-info = places[selected_place]
-st.header(f"📍 {selected_place}")
-st.image(info["image"], use_column_width=True)
-st.write(info["description"])
+    # 허블 법칙으로 거리 증가량 계산
+    # v = H0 * d → Δd = v * t
+    velocity = H0 * initial_distance * 1000  # km/s
+    delta_d_km = velocity * delta_time_sec  # km
+    delta_deg = delta_d_km / 1e9  # 간단하게 스케일 맞추기 (지도 좌표용)
 
-# Folium 지도 생성
-m = folium.Map(location=[56.1304, -106.3468], zoom_start=4)
+    # 은하 이동 (단순하게 오른쪽 위로 밀어냄)
+    new_lat = lat + delta_deg * 0.01
+    new_lon = lon + delta_deg * 0.01
 
-# 마커 추가
-for name, data in places.items():
-    folium.Marker(
-        location=data["location"],
-        popup=f"<b>{name}</b><br>{data['description']}",
-        tooltip=name,
+    folium.CircleMarker(
+        location=[new_lat, new_lon],
+        radius=6,
+        color="cyan",
+        fill=True,
+        fill_opacity=0.7,
+        popup=f"{name} (거리 증가: {int(delta_d_km/1e6):,} million km)"
     ).add_to(m)
 
-# 지도 표시
-st.subheader("🗺️ 위치 보기")
-st_folium(m, width=800, height=500)
+# 지도 출력
+st_data = st_folium(m, width=900, height=600)
+
+   
