@@ -4,7 +4,7 @@ import math
 st.set_page_config(page_title="10억 년 뒤 우주 시뮬레이션", layout="centered")
 
 # 타이틀
-st.title("🌌 10억 년 뒤 우주의 모습 시뮬레이션")
+st.title("🌌 1억 년 뒤 우주의 모습 시뮬레이션")
 st.caption("허블 팽창 모델 기반 텍스트 시뮬레이션 + 이미지")
 
 # 배경 이미지
