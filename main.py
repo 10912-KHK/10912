@@ -1,42 +1,58 @@
+def visualize_future_earth():
+    # 1. 데이터 설정: 미래 지구 온도 및 광도 변화 예측 (대략적 과학 데이터 기반)
+    # 현재로부터 10억 년 후까지의 변화
+    years_from_now = np.array([0, 100, 1000, 10000, 1000000, 100000000, 250000000, 1000000000])
+    temp_change = np.array([15, 17, 20, 19, 18, 25, 35, 100]) # 평균 기온 (섭씨)
 
-import numpy as np
-import requests
-from PIL import Image
-from io import BytesIO
-
-def visualize_cosmic_expansion():
-    # 1. 데이터 설정 (허블의 법칙: v = H0 * d)
-    # H0 (허블 상수)는 약 70 km/s/Mpc로 가정
-    h0 = 70 
-    distances = np.linspace(0, 500, 50) # 거리 (단위: 백만 파섹, Mpc)
-    velocities = h0 * distances         # 후퇴 속도 (단위: km/s)
-
-    # 2. 우주 팽창 타임라인 이미지 가져오기 (NASA/WMAP 제공)
-    img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/CMB_Timeline300_no_text.jpg/800px-CMB_Timeline300_no_text.jpg"
+    # 2. 미래 지구 예측 이미지 가져오기 (초대륙 판게아 프록시마 가상도)
+    # 위키미디어의 2억 5천만 년 후 초대륙 형성 이미지
+    img_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Pangea_Proxima.jpg/800px-Pangea_Proxima.jpg"
     try:
         response = requests.get(img_url)
         img = Image.open(BytesIO(response.content))
     except:
         img = None
 
-    # 3. 그래프 그리기 (1행 2열 구성)
-    fig = plt.subplots(figsize=(14, 6), facecolor='#050505')
+    # 3. 시각화 설정 (1행 2열)
+    fig = plt.figure(figsize=(15, 6), facecolor='#0a0a0a')
     
-    # --- 왼쪽: 우주 팽창 이미지 ---
-    ax1 = plt.subplot(1, 2, 1)
+    # --- 왼쪽: 미래의 지구 모습 (초대륙) ---
+    ax1 = fig.add_subplot(1, 2, 1)
     if img:
         ax1.imshow(img)
-        ax1.set_title("Cosmic Timeline (Expansion)", color='white', fontsize=14)
-        ax1.axis('off') # 이미지 테두리 제거
+        ax1.set_title("Future Earth: Pangea Proxima\n(Approx. 250 Million Years Later)", 
+                      color='cyan', fontsize=14, pad=15)
+        ax1.axis('off')
 
-    # --- 오른쪽: 허블의 법칙 그래프 ---
-    ax2 = plt.subplot(1, 2, 2)
-    ax2.set_facecolor('#050505')
+    # --- 오른쪽: 지구 장기 온도 변화 그래프 ---
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.set_facecolor('#111111')
     
-    # 팽창 데이터를 점과 선으로 표현
-    ax2.plot(distances, velocities, color='cyan', linestyle='--', alpha=0.5)
-    scatter = ax2.scatter(distances, velocities, c=velocities, cmap='magma', s=50)
+    # 로그 스케일을 사용하여 시간 흐름 시각화
+    ax2.plot(years_from_now, temp_change, color='#ff4500', marker='o', linewidth=2, markersize=8)
+    ax2.set_xscale('symlog', linthresh=100) # 초기 100년은 선형, 이후는 로그 스케일
     
-    # 그래프 꾸미기
-    ax2.set_title("Hubble's Law: $v = H_0 \\cdot d$", color='white', fontsize=16)
-    ax2.se
+    # 그래프 스타일링
+    ax2.set_title("Predicted Global Temperature Trend", color='white', fontsize=15)
+    ax2.set_xlabel("Years from Now (Log Scale)", color='white')
+    ax2.set_ylabel("Average Temperature (°C)", color='white')
+    ax2.tick_params(axis='both', colors='white')
+    ax2.grid(True, which="both", ls="-", alpha=0.1, color='white')
+
+    # 주석 추가
+    ax2.annotate('Global Warming', xy=(100, 17), xytext=(500, 25),
+                 arrowprops=dict(facecolor='yellow', shrink=0.05), color='yellow')
+    ax2.annotate('Pangea Proxima', xy=(250000000, 35), xytext=(1000000, 50),
+                 arrowprops=dict(facecolor='cyan', shrink=0.05), color='cyan')
+    ax2.annotate('Ocean Evaporation', xy=(1000000000, 100), xytext=(10000000, 90),
+                 arrowprops=dict(facecolor='red', shrink=0.05), color='red')
+
+    plt.tight_layout()
+    
+    # 저장 및 출력
+    print("미래 지구 변화 시각화 데이터를 생성했습니다.")
+    plt.savefig("future_earth_vision.png", dpi=300, facecolor='#0a0a0a')
+    plt.show()
+
+if __name__ == "__main__":
+    visualize_future_earth()
