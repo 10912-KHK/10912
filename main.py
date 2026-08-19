@@ -1,171 +1,146 @@
 import streamlit as st
 import requests
 import random
-import time
 
 # --- 1. 환경 설정 ---
 st.set_page_config(page_title="슈퍼 우주 퀴즈", page_icon="🔭", layout="centered")
 
-# --- 2. 상수 설정 ---
-API_KEY = "DEMO_KEY"
+# --- 2. 상수 및 백업 데이터 ---
+API_KEY = "DEMO_KEY" 
 MAX_ROUNDS = 5
-# 절대 나오면 안 되는 키워드 (지구, 인공물)
-FORBIDDEN = ["earth", "rocket", "shuttle", "station", "iss", "astronaut", "rover", "telescope", "observatory", "launch", "person", "satellite", "atmosphere", "horizon", "clouds", "skyline", "landscape"]
-# 우주 천체임을 보장하는 키워드
-REQUIRED = ["galaxy", "nebula", "star", "cluster", "planet", "comet", "supernova", "m1", "m31", "ngc", "messier", "asteroid", "sun", "moon", "pulsar"]
-# 전문가용 오답 후보
-FAKE_NAMES = ["NGC 4567", "Messier 82", "IC 1101", "Abell 2744", "Kepler-452b", "V838 Mon", "Pillars of Creation", "Sombrero Galaxy", "Whirlpool Galaxy", "Lagoon Nebula", "Crab Nebula", "Andromeda Galaxy"]
 
-# --- 3. 세션 상태 관리 (앱 재실행 시 데이터 유지 핵심) ---
+# NASA 서버가 먹통일 때 사용할 고퀄리티 백업 데이터 (절대 실패 방지)
+FALLBACK_DATA = [
+    {"url": "https://apod.nasa.gov/apod/image/2303/STSCI-J-P2307a-m-2000x1374.jpg", "title": "The Pillars of Creation", "explanation": "This is a famous nebula in the Eagle Nebula, captured by JWST. It consists of interstellar gas and dust."},
+    {"url": "https://apod.nasa.gov/apod/image/2301/NGC2264_HubbleSubaru_1080.jpg", "title": "The Cone Nebula", "explanation": "A star-forming region in the constellation Monoceros. It has a distinctive conical shape."},
+    {"url": "https://apod.nasa.gov/apod/image/2207/main_release_refined_final_bw_web.jpg", "title": "SMACS 0723 Deep Field", "explanation": "The deepest and sharpest infrared image of the distant universe to date by James Webb."},
+    {"url": "https://apod.nasa.gov/apod/image/2004/M106_HubbleV_2427.jpg", "title": "Spiral Galaxy M106", "explanation": "A majestic spiral galaxy located in the constellation Canes Venatici."},
+    {"url": "https://apod.nasa.gov/apod/image/2109/M31_Subaru_960.jpg", "title": "Andromeda Galaxy (M31)", "explanation": "Our closest large galactic neighbor, a massive spiral galaxy."}
+]
+
+FORBIDDEN = ["earth", "rocket", "iss", "astronaut", "rover", "launch", "shuttle", "observatory", "person", "satellite"]
+CATEGORIES = ["은하 (Galaxy)", "성운 (Nebula)", "행성 (Planet)", "항성/성단 (Star)", "위성 (Moon)", "태양 (Sun)", "기타 (Comet/Asteroid)"]
+FAKE_NAMES = ["NGC 4567", "Messier 82", "IC 1101", "Abell 2744", "Kepler-452b", "V838 Mon", "Pillars of Creation", "Sombrero Galaxy", "Lagoon Nebula", "Crab Nebula"]
+
+# --- 3. 세션 상태 초기화 ---
 if 'game_state' not in st.session_state:
-    st.session_state.game_state = "START" # START, PLAYING, FINISHED
+    st.session_state.game_state = "START"
     st.session_state.quiz_pool = []
     st.session_state.round = 0
     st.session_state.score = 0
     st.session_state.answered = False
-    st.session_state.last_feedback = None # 정답/오답 메시지 저장
 
-# --- 4. 데이터 로직 ---
-def get_category(data):
-    txt = (data['title'] + data['explanation']).lower()
-    if "galaxy" in txt: return "은하 (Galaxy)"
-    if "nebula" in txt: return "성운 (Nebula)"
-    if "planet" in txt: return "행성 (Planet)"
-    if "star" in txt: return "항성/성단 (Star)"
-    if "moon" in txt: return "위성 (Moon)"
-    if "sun" in txt: return "태양 (Sun)"
-    return "기타 (Comet/Asteroid)"
-
-def fetch_valid_data():
-    """조건에 맞는 우주 사진 5장을 찾을 때까지 무한 반복 (최대 3회 시도)"""
+# --- 4. 데이터 수집 함수 (스마트 필터링 + 백업) ---
+def prepare_quiz():
     pool = []
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
-    for attempt in range(1, 4):
-        status_text.write(f"🚀 우주 탐색 중... (시도 {attempt}/3)")
+    with st.status("🚀 우주 데이터 분석 중...", expanded=True) as status:
         try:
-            # 한 번에 50장을 가져와 확률 극대화
-            res = requests.get(f"https://api.nasa.gov/planetary/apod?api_key={API_KEY}&count=50", timeout=20).json()
-            for item in res:
-                if item.get("media_type") == "image":
-                    title = item.get("title", "").lower()
-                    expl = item.get("explanation", "").lower()
-                    full_text = title + " " + expl
-                    
-                    # 1. 금지 단어 필터링
-                    if any(bad in title for bad in FORBIDDEN): continue
-                    # 2. 필수 단어 포함 여부 (우주 천체인지 확인)
-                    if any(good in full_text for good in REQUIRED):
-                        pool.append(item)
-                
-                if len(pool) >= MAX_ROUNDS: break
-            
-            if len(pool) >= MAX_ROUNDS: break
+            # 1. NASA API 시도
+            response = requests.get(f"https://api.nasa.gov/planetary/apod?api_key={API_KEY}&count=30", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                for item in data:
+                    if item.get("media_type") == "image":
+                        title = item.get("title", "").lower()
+                        # 필터링: 지구나 인공물 제외
+                        if not any(bad in title for bad in FORBIDDEN):
+                            pool.append(item)
+                    if len(pool) >= MAX_ROUNDS: break
         except Exception as e:
-            st.error(f"연결 오류: {e}")
-            return None
-        progress_bar.progress(attempt * 33)
-    
-    status_text.empty()
-    progress_bar.empty()
-    return pool[:MAX_ROUNDS] if len(pool) >= MAX_ROUNDS else None
+            st.warning("NASA 실시간 서버 연결이 원활하지 않아 준비된 탐사 데이터를 사용합니다.")
 
-# --- 5. 게임 UI 로직 ---
-
-def start_game():
-    data = fetch_valid_data()
-    if data:
-        st.session_state.quiz_pool = data
+        # 2. 만약 API에서 5장을 못 구했다면? 백업 데이터로 채움 (절대 실패 방지)
+        if len(pool) < MAX_ROUNDS:
+            needed = MAX_ROUNDS - len(pool)
+            pool.extend(random.sample(FALLBACK_DATA, needed))
+        
+        st.session_state.quiz_pool = pool
         st.session_state.game_state = "PLAYING"
         st.session_state.round = 0
         st.session_state.score = 0
         st.session_state.answered = False
-        st.rerun()
-    else:
-        st.error("우주 데이터를 충분히 가져오지 못했습니다. 다시 눌러주세요!")
-
-def next_round():
-    st.session_state.round += 1
-    st.session_state.answered = False
-    st.session_state.last_feedback = None
-    if st.session_state.round >= MAX_ROUNDS:
-        st.session_state.game_state = "FINISHED"
+        status.update(label="✅ 탐사 준비 완료!", state="complete", expanded=False)
+    
     st.rerun()
 
-# --- 6. 화면 렌더링 ---
+# --- 5. 화면 레이아웃 ---
 
-# (1) 시작 화면
+# [시작 화면]
 if st.session_state.game_state == "START":
     st.title("🔭 슈퍼 우주 천체 맞히기")
-    st.write("---")
-    st.info("실제 NASA의 실시간 데이터를 사용하여 '진짜 우주'만 선별했습니다.")
-    st.write("1~2라운드: 천체의 종류 맞히기 (쉬움)")
-    st.write("3~5라운드: 천체의 이름 맞히기 (어려움)")
+    st.write("NASA의 실제 관측 데이터를 바탕으로 구성된 5단계 퀴즈입니다.")
+    st.write("- **1~2단계:** 천체의 카테고리 맞히기")
+    st.write("- **3~5단계:** 천체의 실제 이름 맞히기 (전문가)")
     if st.button("게임 시작", use_container_width=True):
-        start_game()
+        prepare_quiz()
 
-# (2) 게임 진행 화면
+# [게임 진행 화면]
 elif st.session_state.game_state == "PLAYING":
     current_q = st.session_state.quiz_pool[st.session_state.round]
+    
     st.subheader(f"라운드 {st.session_state.round + 1} / {MAX_ROUNDS}")
     st.progress((st.session_state.round + 1) / MAX_ROUNDS)
     
     st.image(current_q['url'], use_container_width=True)
-    
-    # 난이도 설정
+
+    # 문제 및 정답 설정
+    def get_ans_category(d):
+        t = (d['title'] + d['explanation']).lower()
+        if "galaxy" in t: return "은하 (Galaxy)"
+        if "nebula" in t: return "성운 (Nebula)"
+        if "planet" in t: return "행성 (Planet)"
+        if "star" in t or "cluster" in t: return "항성/성단 (Star)"
+        if "moon" in t: return "위성 (Moon)"
+        if "sun" in t: return "태양 (Sun)"
+        return "기타 (Comet/Asteroid)"
+
     if st.session_state.round < 2:
-        st.write("**Q. 이 사진 속 천체는 어떤 종류인가요?**")
-        correct_ans = get_category(current_q)
-        options = ["은하 (Galaxy)", "성운 (Nebula)", "행성 (Planet)", "항성/성단 (Star)", "위성 (Moon)", "태양 (Sun)", "기타 (Comet/Asteroid)"]
+        st.write("### Q. 이 천체는 무엇일까요?")
+        correct = get_ans_category(current_q)
+        options = CATEGORIES
     else:
-        st.write("**Q. 이 천체의 구체적인 명칭(제목)은 무엇일까요?**")
-        correct_ans = current_q['title']
-        # 오답 리스트 생성 (중복 제거)
-        others = [n for n in FAKE_NAMES if n != correct_ans]
-        options = random.sample(others, 3) + [correct_ans]
+        st.write("### Q. 이 천체의 구체적인 명칭은?")
+        correct = current_q['title']
+        others = [f for f in FAKE_NAMES if f != correct]
+        options = random.sample(others, 3) + [correct]
         random.shuffle(options)
 
-    # 버튼 인터페이스
+    # 버튼 레이아웃
     cols = st.columns(2)
     for i, opt in enumerate(options):
         with cols[i % 2]:
-            # 정답 선택 전후 상태 관리
-            if st.button(opt, key=f"btn_{st.session_state.round}_{i}", 
-                         disabled=st.session_state.answered, use_container_width=True):
+            if st.button(opt, key=f"btn_{i}", disabled=st.session_state.answered, use_container_width=True):
                 st.session_state.answered = True
-                if opt == correct_ans:
+                if opt == correct:
+                    st.success(f"정답입니다! 🎉 (+20점)\n\n**{current_q['title']}**")
                     st.session_state.score += 20
-                    st.session_state.last_feedback = ("SUCCESS", f"정답입니다! 🎉 (+20점)\n\n**제목:** {current_q['title']}")
                 else:
-                    st.session_state.last_feedback = ("ERROR", f"아쉽네요! 정답은 **{correct_ans}** 입니다.")
-                st.rerun()
+                    st.error(f"오답입니다. 정답은: {correct}")
+                
+                with st.expander("천체 설명 확인"):
+                    st.write(current_q['explanation'])
 
-    # 피드백 표시
-    if st.session_state.answered and st.session_state.last_feedback:
-        fb_type, fb_msg = st.session_state.last_feedback
-        if fb_type == "SUCCESS": st.success(fb_msg)
-        else: st.error(fb_msg)
-        
-        with st.expander("천체 백과사전 보기 (설명)"):
-            st.write(current_q['explanation'])
-        
-        if st.button("다음 라운드로 ➡️", use_container_width=True):
-            next_round()
+    if st.session_state.answered:
+        if st.button("다음으로 ➡️", use_container_width=True):
+            st.session_state.round += 1
+            st.session_state.answered = False
+            if st.session_state.round >= MAX_ROUNDS:
+                st.session_state.game_over = True # (실제로는 game_state 변경)
+                st.session_state.game_state = "FINISHED"
+            st.rerun()
 
-# (3) 게임 결과 화면
+# [결과 화면]
 elif st.session_state.game_state == "FINISHED":
     st.balloons()
-    st.title("🏁 탐험 완료!")
+    st.title("🏁 탐험 종료!")
     st.header(f"최종 점수: {st.session_state.score} / 100")
     
-    if st.session_state.score == 100: grade = "🌌 우주 마스터 (완벽합니다!)"
-    elif st.session_state.score >= 60: grade = "🔭 숙련된 천문학자"
-    else: grade = "🚀 견습 우주 비행사"
+    if st.session_state.score == 100: grade = "🌌 우주 마스터"
+    elif st.session_state.score >= 60: grade = "🔭 숙련된 관측자"
+    else: grade = "🚀 견습 탐험가"
     
-    st.info(f"등급: {grade}")
-    
-    if st.button("처음으로 돌아가기", use_container_width=True):
+    st.info(f"당신의 등급은: **{grade}**")
+    if st.button("다시 도전", use_container_width=True):
         st.session_state.game_state = "START"
         st.session_state.quiz_pool = []
         st.rerun()
