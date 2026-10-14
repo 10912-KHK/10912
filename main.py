@@ -1,137 +1,92 @@
-import streamlit as st
+import requests
 import random
-import time
+import re
+from datetime import datetime, timedelta
 
-# --- 1. 페이지 설정 ---
-st.set_page_config(page_title="Sol d 생존 시뮬레이터", page_icon="🚀", layout="centered")
-
-# --- 2. 게임 데이터 (이벤트 및 시나리오) ---
-EVENTS = [
-    {
-        "title": "☄️ 소행성 지대 발견",
-        "description": "선체 레이더에 거대한 소행성 군락이 감지되었습니다. 어떻게 하시겠습니까?",
-        "options": {
-            "공격적으로 돌파한다 (연료 소모↑, 시간 단축)": {"fuel": -20, "hull": -10, "dist": 500, "msg": "소행성 파편에 부딪혔지만 빠르게 통과했습니다!"},
-            "조심스럽게 우회한다 (연료 소모↓, 시간 지연)": {"fuel": -10, "hull": 0, "dist": 200, "msg": "시간은 걸렸지만 안전하게 우회했습니다."},
-            "소행성에서 자원을 채굴한다": {"fuel": 5, "hull": -20, "dist": 50, "msg": "자원을 얻었지만 채굴 중 선체가 손상되었습니다."}
-        }
-    },
-    {
-        "title": "🛸 정체불명의 신호",
-        "description": "근처 Abell-2744 좌표 방향에서 정체불명의 무선 신호가 들려옵니다.",
-        "options": {
-            "신호를 추적하여 접근한다": {"fuel": -15, "hull": 10, "dist": 100, "msg": "버려진 탐사선을 발견해 선체를 수리했습니다!"},
-            "무시하고 항로를 유지한다": {"fuel": 0, "hull": 0, "dist": 300, "msg": "안전이 제일입니다. 항로를 유지합니다."},
-            "교신을 시도한다": {"fuel": -5, "hull": -5, "dist": 50, "msg": "강한 전자기파 공격을 받아 시스템이 일시 마비되었습니다."}
-        }
-    },
-    {
-        "title": "🌀 우주 폭풍 (Solar Flare)",
-        "description": "Sol(태양)에서 강력한 플레어가 발생했습니다. 방사선 수치가 급증합니다!",
-        "options": {
-            "방어막에 모든 에너지를 집중한다": {"fuel": -30, "hull": 0, "dist": 100, "msg": "연료를 많이 썼지만 선체는 멀쩡합니다."},
-            "행성 뒤로 숨는다": {"fuel": -10, "hull": -10, "dist": 50, "msg": "완벽히 숨지 못해 약간의 피해를 입었습니다."},
-            "엔진을 과부하시켜 구역을 이탈한다": {"fuel": -20, "hull": -20, "dist": 600, "msg": "엄청난 속도로 도망쳤지만 선체에 무리가 갔습니다."}
-        }
-    }
-]
-
-# --- 3. 세션 상태 초기화 ---
-if 'game_state' not in st.session_state:
-    st.session_state.update({
-        'game_state': "START",
-        'fuel': 100,
-        'hull': 100,
-        'distance': 0,
-        'log': ["항해를 시작합니다. 목표는 Sol d 시스템 이탈입니다."],
-        'turn': 0
-    })
-
-# --- 4. 게임 로직 함수 ---
-def reset_game():
-    st.session_state.update({
-        'game_state': "PLAYING",
-        'fuel': 100,
-        'hull': 100,
-        'distance': 0,
-        'log': ["Sol d(지구) 궤도를 떠나 심우주로 향합니다."],
-        'turn': 1
-    })
-
-def process_choice(effect, msg):
-    st.session_state.fuel += effect.get("fuel", 0)
-    st.session_state.hull += effect.get("hull", 0)
-    st.session_state.distance += effect.get("dist", 0)
-    st.session_state.log.insert(0, f"Round {st.session_state.turn}: {msg}")
-    st.session_state.turn += 1
+# 1. NASA APOD API를 이용해 무작위 우주 사진 및 정보 가져오기
+def get_random_space_trivia():
+    # 2000년 이후부터 어제까지의 날짜 중 무작위 하루 선택
+    start_date = datetime(2000, 1, 1)
+    end_date = datetime.now() - timedelta(days=1)
+    random_date = start_date + timedelta(days=random.randint(0, (end_date - start_date).days))
+    date_str = random_date.strftime("%Y-%m-%d")
     
-    # 패배 조건 체크
-    if st.session_state.fuel <= 0 or st.session_state.hull <= 0:
-        st.session_state.game_state = "GAMEOVER"
-    # 승리 조건 체크 (예: 2000km 이동)
-    elif st.session_state.distance >= 2000:
-        st.session_state.game_state = "VICTORY"
-
-# --- 5. UI 화면 구성 ---
-
-# [메인 타이틀]
-st.title("🚀 Sol d: Galactic Survivor")
-st.write(f"**현재 위치:** Sol d(지구)로부터 {st.session_state.distance} 광년 이탈 중")
-
-# [상태바 표시]
-col1, col2, col3 = st.columns(3)
-col1.metric("⛽ 연료", f"{st.session_state.fuel}%")
-col2.metric("🛠 선체 내구도", f"{st.session_state.hull}%")
-col3.metric("📅 항해 일수", f"{st.session_state.turn}일")
-
-st.write("---")
-
-# [화면 전환 로직]
-if st.session_state.game_state == "START":
-    st.subheader("인류의 모성, Sol d를 떠나 심우주로...")
-    st.write("당신은 탐사선 '테라(Terra)'호의 함장입니다. 자원이 바닥나기 전에 가능한 멀리 우주를 탐사하십시오.")
-    if st.button("엔진 점화 (게임 시작)", use_container_width=True):
-        reset_game()
-        st.rerun()
-
-elif st.session_state.game_state == "PLAYING":
-    # 랜덤 이벤트 발생
-    event = random.choice(EVENTS)
-    st.subheader(event['title'])
-    st.write(event['description'])
+    # NASA APOD API 호출 (무료 DEMO_KEY 사용)
+    url = f"https://nasa.gov{date_str}"
     
-    st.write("---")
-    st.write("**어떤 조치를 취하시겠습니까?**")
+    try:
+        response = requests.get(url)
+        data = response.json()
+        
+        # 동영상 페이지인 경우 사진이 없으므로 재시도
+        if data.get("media_type") != "image":
+            return get_random_space_trivia()
+            
+        return {
+            "title": data.get("title"),
+            "url": data.get("url"),
+            "explanation": data.get("explanation")
+        }
+    except Exception as e:
+        print("데이터를 가져오는 중 오류가 발생했습니다. 다시 시도합니다.")
+        return get_random_space_trivia()
+
+# 2. 퀴즈 게임 실행 함수
+def start_quiz_game():
+    print("🚀 NASA 우주 천체 맞추기 퀴즈 게임을 시작합니다! 🚀")
+    print("잠시만 기다려주세요... NASA에서 데이터를 가져오는 중입니다...\n")
     
-    # 선택지 버튼 생성
-    for option_text, effect in event['options'].items():
-        if st.button(option_text, use_container_width=True):
-            process_choice(effect, effect['msg'])
-            st.rerun()
-
-    # 항해 일지 (최근 3개만)
-    st.write("---")
-    st.write("**📋 항해 일지**")
-    for l in st.session_state.log[:3]:
-        st.write(f"- {l}")
-
-elif st.session_state.game_state == "GAMEOVER":
-    st.error("🚨 임무 실패! 🚨")
-    if st.session_state.fuel <= 0:
-        st.write("연료가 바닥나 우주 미아가 되었습니다...")
+    # 데이터 로드
+    trivia = get_random_space_trivia()
+    correct_answer = trivia["title"]
+    
+    # 오답으로 사용할 가짜 천체 이름 목록
+    fake_answers = [
+        "Andromeda Galaxy (M31)", "Orion Nebula (M42)", "Crab Nebula (M1)", 
+        "Hubble Deep Field", "Pillars of Creation", "Jupiter's Great Red Spot",
+        "Saturn's Rings", "Mars Rover Perseverance", "James Webb Space Telescope"
+    ]
+    
+    # 정답이 오답 목록에 있다면 제거 후 3개 무작위 선택
+    if correct_answer in fake_answers:
+        fake_answers.remove(correct_answer)
+    options = random.sample(fake_answers, 3)
+    options.append(correct_answer)
+    random.shuffle(options) # 보기 섞기
+    
+    # 퀴즈 출제
+    print("======= [ QUIZ ] =======")
+    print(f"📷 힌트 사진 (링크를 클릭해 확인하세요!):")
+    print(f"👉 {trivia['url']}\n")
+    
+    # 설명문에서 정답 단어가 포함되어 있다면 매스킹(***) 처리하여 힌트로 제공
+    masked_explanation = re.sub(re.escape(correct_answer), " [ 정답 천체 ] ", trivia["explanation"], flags=re.IGNORECASE)
+    print("📝 천체 설명 (영문 힌트):")
+    print(f"{masked_explanation[:400]}...\n") # 너무 길면 잘라서 출력
+    
+    print("❓ 다음 중 사진 속 천체의 이름은 무엇일까요?")
+    for i, option in enumerate(options, 1):
+        print(f"{i}. {option}")
+        
+    # 사용자 입력 받기
+    while True:
+        try:
+            user_input = int(input("\n정답 번호를 입력하세요 (1~4): "))
+            if 1 <= user_input <= 4:
+                break
+            print("1에서 4 사이의 숫자를 입력해주세요.")
+        except ValueError:
+            print("숫자만 입력 가능합니다.")
+            
+    # 정답 확인
+    selected_answer = options[user_input - 1]
+    if selected_answer == correct_answer:
+        print("\n🎉 정답입니다! 우주 전문가이시군요! 🧑‍🚀")
     else:
-        st.write("선체가 파괴되어 우주의 먼지가 되었습니다...")
-    
-    st.write(f"최종 탐사 거리: {st.session_state.distance} 광년")
-    if st.button("새로운 기체로 재시작", use_container_width=True):
-        st.session_state.game_state = "START"
-        st.rerun()
+        print(f"\n❌ 아쉽게도 틀렸습니다. 정답은 [{correct_answer}] 입니다.")
+        
+    print(f"\n✨ 이 천체의 풀 네임: {trivia['title']}")
 
-elif st.session_state.game_state == "VICTORY":
-    st.balloons()
-    st.success("🎉 임무 성공! 🎉")
-    st.write("인류 최초로 Sol d 시스템을 완벽히 벗어나 Abell-2744 경계에 도달했습니다!")
-    st.write(f"최종 항해 일수: {st.session_state.turn}일")
-    if st.button("새로운 항로 탐사 (다시 하기)", use_container_width=True):
-        st.session_state.game_state = "START"
-        st.rerun()
+# 게임 실행
+if __name__ == "__main__":
+    start_quiz_game()
