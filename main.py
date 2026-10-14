@@ -1,3 +1,11 @@
+import streamlit as st
+import streamlit.components.v1 as components
+
+# 1. Streamlit 화면 레이아웃 깔끔하게 설정
+st.set_page_config(page_title="우주 천체 탐험 퀴즈", layout="centered")
+
+# 2. 끊겨 있던 HTML/JS 문법을 완벽하게 복구 및 결합
+html_code = """
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,9 +15,10 @@
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c20, #03001e, #23074d);
             color: #ffffff;
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -21,7 +30,7 @@
             border-radius: 16px;
             padding: 30px;
             width: 100%;
-            max-width: 650px;
+            max-width: 600px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
             border: 1px rgba(255, 255, 255, 0.1) solid;
             text-align: center;
@@ -50,10 +59,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s ease;
-        }
-        .image-box img:hover {
-            transform: scale(1.05);
         }
         .question-box {
             font-size: 17px;
@@ -81,10 +86,6 @@
         .option-btn:hover:not(:disabled) {
             background: rgba(79, 172, 254, 0.2);
             border-color: #4facfe;
-            transform: translateY(-2px);
-        }
-        .option-btn:disabled {
-            cursor: not-allowed;
         }
         .correct {
             background-color: rgba(46, 204, 113, 0.3) !important;
@@ -116,15 +117,6 @@
             cursor: pointer;
             font-size: 16px;
             display: none;
-            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
-        }
-        .next-btn:hover {
-            opacity: 0.9;
-        }
-        .result-title {
-            color: #00f2fe;
-            font-size: 28px;
-            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -138,33 +130,26 @@
         <img id="space-img" src="" alt="우주 천체 이미지">
     </div>
     
-    <div class="question-box" id="question-text">
-        질문을 불러오는 중입니다...
-    </div>
-    
-    <div class="options-container" id="options-box">
-        <!-- 보기가 여기에 동적으로 생성됩니다 -->
-    </div>
-    
+    <div class="question-box" id="question-text">불러오는 중...</div>
+    <div class="options-container" id="options-box"></div>
     <div class="feedback-box" id="feedback-text"></div>
     <button class="next-btn" id="next-button" onclick="nextQuestion()">다음 문제로 이동 ➡️</button>
 </div>
 
 <script>
-    // 5개의 우주 천체 데이터 세트 (거리, 생성 시기, 크기 순위 포함)
     const quizData = [
         {
             question: "방패자리 방향으로 불타오르는 듯한 붉은빛의 초거성, 태양 반지름의 약 2,150배에 달하는 거대한 체적을 자랑하는 이 별은 현재까지 인류가 발견한 가장 거대한 항성 중 하나입니다. 태양계의 태양을 이 별의 중심에 놓는다면 그 표면은 토성 궤도를 넘어설 정도로 압도적인 크기를 가집니다. 이 거대한 초거성의 이름은 무엇일까요?",
             image: "https://unsplash.com",
             options: [
-                { text: "스테파니손 2-18 (Stephenson 2-18)", isCorrect: true, reason: "정답입니다! 스테파니손 2-18은 현재 인류가 관측한 적색초거성 중 크기 순위 최상위권(태양의 2,150배)에 위치한 가장 거대한 항성입니다." },
+                { text: "스테파니손 2-18 (Stephenson 2-18)", isCorrect: true, reason: "정답입니다! 스테파니손 2-18은 현재 인류가 관측한 적색초거성 중 크기 순위 최상위권에 위치한 가장 거대한 항성입니다." },
                 { text: "베텔게우스 (Betelgeuse)", isCorrect: false, reason: "오답입니다. 오리온자리의 베텔게우스도 거대하지만, 태양 반지름의 약 700~1,000배로 스테파니손보다 훨씬 작습니다." },
                 { text: "안타레스 (Antares)", isCorrect: false, reason: "오답입니다. 전갈자리의 안타레스는 태양 반지름의 약 700배 수준입니다." },
                 { text: "VY 캔이스 마요리스 (VY Canis Majoris)", isCorrect: false, reason: "오답입니다. 과거 가장 큰 별로 불렸으나 정밀 측정 결과 태양의 1,420배 수준으로 순위가 밀려났습니다." }
             ]
         },
         {
-            question: "우리 은하의 가장 거대한 이웃이자, 수천억 개의 별들이 소용돌이치는 눈부신 빛의 성운형 은하입니다. 이 아름다운 은하는 지구에서 엄청난 거리만큼 떨어져 있지만, 중력의 이끌림 때문에 초속 약 110km의 속도로 우리 은하를 향해 다가오고 있습니다. 지구에서 이 은하까지의 거리와 과학자들이 예상하는 두 은하의 충돌·합병 시기는 언제일까요?",
+            question: "우리 은하의 가장 거대한 이웃이자, 수천억 개의 별들이 소용돌이치는 눈부신 빛의 성운형 은하입니다. 지구에서 이 은하까지의 거리와 과학자들이 예상하는 두 은하의 충돌·합병 시기는 언제일까요?",
             image: "https://unsplash.com",
             options: [
                 { text: "약 250만 광년 / 약 40억~45억 년 뒤", isCorrect: true, reason: "정답입니다! 안드로메다 은하는 지구에서 약 250만 광년 떨어져 있으며, 약 40억~45억 년 뒤 우리 은하와 완전히 충돌하여 하나의 거대한 타원 은하를 이룰 예정입니다." },
@@ -178,13 +163,13 @@
             image: "https://unsplash.com",
             options: [
                 { text: "약 660억 배", isCorrect: true, reason: "정답입니다! TON 618은 발견된 초대질량 블랙홀 중 최대 규모 중 하나로, 태양 질량의 약 660억 배라는 상상을 초월하는 초거대 질량을 가집니다." },
-                { text: "약 400만 배", isCorrect: false, reason: "오답입니다. 400만 배는 고작(?) 우리 은하 중심에 위치한 궁수자리 A* 블랙홀의 무게입니다." },
+                { text: "약 400만 배", isCorrect: false, reason: "오답입니다. 400만 배는 고작 우리 은하 중심에 위치한 궁수자리 A* 블랙홀의 무게입니다." },
                 { text: "약 1억 배", isCorrect: false, reason: "오답입니다. 일반적인 거대 은하 중심 블랙홀 수준의 질량이며, TON 618의 규모에는 한참 못 미칩니다." },
                 { text: "약 5천만 배", isCorrect: false, reason: "오답입니다. TON 618은 우주 초기 생성되어 빛나고 있는 극단적인 천체입니다." }
             ]
         },
         {
-            question: "허블과 제임스 웹 우주망원경이 포착한 가장 경이로운 우주 풍경 중 하나인 '창조의 기둥(Pillars of Creation)'입니다. 독수리 성운(M16) 내부에 위치한 이곳은 아기 별들이 쉴 새 없이 생성되는 요람입니다. 이 아름다운 가스 기둥은 지구로부터 얼마나 떨어져 있으며, 주로 어떤 성분으로 이루어져 있을까요?",
+            question: "허블과 제임스 웹 우주망원경이 포착한 가장 경이로운 우주 풍경 중 하나인 '창조의 기둥(Pillars of Creation)'입니다. 독수리 성운(M16) 내부에 위치한 이곳은 아기 별들이 쉴 새 없이 생성되는 요람입니다. 이 가스 기둥은 지구로부터 얼마나 떨어져 있으며, 주로 어떤 성분으로 이루어져 있을까요?",
             image: "https://unsplash.com",
             options: [
                 { text: "약 6,500광년 / 저온의 수소 가스와 우주 먼지", isCorrect: true, reason: "정답입니다! 창조의 기둥은 지구에서 약 6,500광년 거리에 있으며, 짙은 밀도의 차가운 수소 가스와 먼지들이 뭉쳐지면서 지속적으로 수많은 새로운 별들을 생성하고 있습니다." },
@@ -194,7 +179,7 @@
             ]
         },
         {
-            question: "천칭자리 방향에 위치하며 은빛으로 고요하게 빛나는 HD 140283, 이른바 '므두셀라 별(Methuselah star)'입니다. 우주 역사상 나이 순위가 가장 높은 천체 중 하나인 이 별은 빅뱅 직후 우주 초기 환경의 비밀을 고스란히 간직하고 있습니다. 과학자들이 추정한 이 최고령 준거성의 나이는 대략 얼마일까요?",
+            question: "천칭자리 방향에 위치하며 은빛으로 고요하게 빛나는 HD 140283, 이른바 '므두셀라 별(Methuselah star)'입니다. 우주 역사상 나이 순위가 가장 높은 천체 중 하나인 이 별은 과학자들이 추정한 이 최고령 준거성의 나이는 대략 얼마일까요?",
             image: "https://unsplash.com",
             options: [
                 { text: "약 135억 년", isCorrect: true, reason: "정답입니다! 므두셀라 별의 추정 나이는 약 135억 년 이상으로, 우주 전체 나이(약 138억 년) 직후에 태어난 우주 조상님 격인 별입니다." },
@@ -208,15 +193,12 @@
     let currentQuestionIndex = 0;
     let score = 0;
 
-    // 배열 무작위 셔플 함수 (보기 섞기용)
     function shuffle(array) {
         return array.sort(() => Math.random() - 0.5);
     }
 
     function loadQuestion() {
         const currentQuiz = quizData[currentQuestionIndex];
-        
-        // UI 초기화
         document.getElementById("progress-text").innerText = `문제 ${currentQuestionIndex + 1} / ${quizData.length}`;
         document.getElementById("space-img").src = currentQuiz.image;
         document.getElementById("question-text").innerText = currentQuiz.question;
@@ -225,3 +207,45 @@
         optionsBox.innerHTML = "";
         
         document.getElementById("feedback-text").style.display = "none";
+        document.getElementById("next-button").style.display = "none";
+
+        const shuffledOptions = shuffle([...currentQuiz.options]);
+        
+        shuffledOptions.forEach(opt => {
+            const button = document.createElement("button");
+            button.className = "option-btn";
+            button.innerText = opt.text;
+            button.onclick = () => selectOption(button, opt.isCorrect, opt.reason);
+            optionsBox.appendChild(button);
+        });
+    }
+
+    function selectOption(selectedBtn, isCorrect, reason) {
+        const allButtons = document.querySelectorAll(".option-btn");
+        allButtons.forEach(btn => btn.disabled = true);
+        if (isCorrect) {
+            selectedBtn.classList.add("correct");
+score++;
+} else {
+selectedBtn.classList.add("wrong");
+const currentQuiz = quizData[currentQuestionIndex];
+allButtons.forEach(btn => {
+const matchedOption = currentQuiz.options.find(o => o.text === btn.innerText);
+if (matchedOption && matchedOption.isCorrect) btn.classList.add("correct");
+});
+}
+const feedbackBox = document.getElementById("feedback-text");
+feedbackBox.innerText = (isCorrect ? "💡 [정답] " : "❌ [오답] ") + reason;
+feedbackBox.style.display = "block";
+document.getElementById("next-button").style.display = "inline-block";
+}
+function nextQuestion() {
+currentQuestionIndex++;
+if (currentQuestionIndex < quizData.length) loadQuestion();
+else showFinalResult();
+}
+function showFinalResult() {
+const quizCard = document.getElementById("quiz-card");
+quizCard.innerHTML = <h1 style="color: #00f2fe; font-size: 28px; margin-bottom: 10px;">🌌 탐험 완료!</h1> <p style="font-size: 18px; margin-bottom: 20px;">당신이 획득한 우주 지식 점수</p> <div style="font-size: 48px; font-weight: bold; color: #00f2fe; margin-bottom: 20px;">${score} / ${quizData.length}</div> <p style="line-height: 1.6; color: #ddd; margin-bottom: 30px; font-size: 15px;"> ${score === 5 ? '완벽합니다! 당신은 걸어 다니는 천문학 사전이시군요! 🪐' : '멋진 도전이었습니다! 우주의 비밀들을 알아가는 즐거운 시간이 되었기를 바랍니다. ✨'} </p> <button class="next-btn" style="display:inline-block;" onclick="location.reload()">다시 도전하기 🔄</button>;
+}
+window.onload = loadQuestion;
