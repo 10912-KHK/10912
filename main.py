@@ -1,92 +1,124 @@
-import requests
-import random
-import re
-from datetime import datetime, timedelta
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 NASA 우주 천체 맞추기 퀴즈</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0b0f19; color: #ffffff; text-align: center; padding: 20px; margin: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #161d30; padding: 30px; border-radius: 15px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        h1 { color: #4dadff; font-size: 24px; margin-bottom: 20px; }
+        #space-img { max-width: 100%; max-height: 350px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; margin-left: auto; margin-right: auto; }
+        .loading { font-size: 18px; color: #aaa; margin: 40px 0; }
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 20px; }
+        button { background-color: #243454; color: white; border: 2px solid #3b5382; padding: 14px; font-size: 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s ease; text-align: left; padding-left: 20px; }
+        button:hover { background-color: #3b5382; border-color: #4dadff; }
+        #result { margin-top: 25px; font-size: 20px; font-weight: bold; }
+        #next-btn { background-color: #00aa6c; border: none; text-align: center; padding: 12px 25px; display: none; margin: 20px auto 0 auto; border-radius: 25px; font-weight: bold; }
+        #next-btn:hover { background-color: #00cc82; }
+    </style>
+</head>
+<body>
 
-# 1. NASA APOD API를 이용해 무작위 우주 사진 및 정보 가져오기
-def get_random_space_trivia():
-    # 2000년 이후부터 어제까지의 날짜 중 무작위 하루 선택
-    start_date = datetime(2000, 1, 1)
-    end_date = datetime.now() - timedelta(days=1)
-    random_date = start_date + timedelta(days=random.randint(0, (end_date - start_date).days))
-    date_str = random_date.strftime("%Y-%m-%d")
-    
-    # NASA APOD API 호출 (무료 DEMO_KEY 사용)
-    url = f"https://nasa.gov{date_str}"
-    
-    try:
-        response = requests.get(url)
-        data = response.json()
-        
-        # 동영상 페이지인 경우 사진이 없으므로 재시도
-        if data.get("media_type") != "image":
-            return get_random_space_trivia()
-            
-        return {
-            "title": data.get("title"),
-            "url": data.get("url"),
-            "explanation": data.get("explanation")
-        }
-    except Exception as e:
-        print("데이터를 가져오는 중 오류가 발생했습니다. 다시 시도합니다.")
-        return get_random_space_trivia()
+<div class="container">
+    <h1>🌌 NASA 천체 맞추기 퀴즈</h1>
+    <div id="loading" class="loading">🔄 NASA에서 무작위 우주 사진을 불러오는 중...</div>
+    <img id="space-img" alt="NASA Space Object">
+    <div class="options-grid" id="options"></div>
+    <div id="result"></div>
+    <button id="next-btn" onclick="startQuiz()">다음 문제 풀기 ➡️</button>
+</div>
 
-# 2. 퀴즈 게임 실행 함수
-def start_quiz_game():
-    print("🚀 NASA 우주 천체 맞추기 퀴즈 게임을 시작합니다! 🚀")
-    print("잠시만 기다려주세요... NASA에서 데이터를 가져오는 중입니다...\n")
-    
-    # 데이터 로드
-    trivia = get_random_space_trivia()
-    correct_answer = trivia["title"]
-    
-    # 오답으로 사용할 가짜 천체 이름 목록
-    fake_answers = [
+<script>
+    const fakeAnswers = [
         "Andromeda Galaxy (M31)", "Orion Nebula (M42)", "Crab Nebula (M1)", 
         "Hubble Deep Field", "Pillars of Creation", "Jupiter's Great Red Spot",
-        "Saturn's Rings", "Mars Rover Perseverance", "James Webb Space Telescope"
-    ]
-    
-    # 정답이 오답 목록에 있다면 제거 후 3개 무작위 선택
-    if correct_answer in fake_answers:
-        fake_answers.remove(correct_answer)
-    options = random.sample(fake_answers, 3)
-    options.append(correct_answer)
-    random.shuffle(options) # 보기 섞기
-    
-    # 퀴즈 출제
-    print("======= [ QUIZ ] =======")
-    print(f"📷 힌트 사진 (링크를 클릭해 확인하세요!):")
-    print(f"👉 {trivia['url']}\n")
-    
-    # 설명문에서 정답 단어가 포함되어 있다면 매스킹(***) 처리하여 힌트로 제공
-    masked_explanation = re.sub(re.escape(correct_answer), " [ 정답 천체 ] ", trivia["explanation"], flags=re.IGNORECASE)
-    print("📝 천체 설명 (영문 힌트):")
-    print(f"{masked_explanation[:400]}...\n") # 너무 길면 잘라서 출력
-    
-    print("❓ 다음 중 사진 속 천체의 이름은 무엇일까요?")
-    for i, option in enumerate(options, 1):
-        print(f"{i}. {option}")
-        
-    # 사용자 입력 받기
-    while True:
-        try:
-            user_input = int(input("\n정답 번호를 입력하세요 (1~4): "))
-            if 1 <= user_input <= 4:
-                break
-            print("1에서 4 사이의 숫자를 입력해주세요.")
-        except ValueError:
-            print("숫자만 입력 가능합니다.")
-            
-    # 정답 확인
-    selected_answer = options[user_input - 1]
-    if selected_answer == correct_answer:
-        print("\n🎉 정답입니다! 우주 전문가이시군요! 🧑‍🚀")
-    else:
-        print(f"\n❌ 아쉽게도 틀렸습니다. 정답은 [{correct_answer}] 입니다.")
-        
-    print(f"\n✨ 이 천체의 풀 네임: {trivia['title']}")
+        "Saturn's Rings", "Mars Rover Perseverance", "James Webb Space Telescope",
+        "Helix Nebula", "Pleiades Star Cluster", "Sombrero Galaxy"
+    ];
 
-# 게임 실행
-if __name__ == "__main__":
-    start_quiz_game()
+    let correctAnswer = "";
+
+    // 무작위 날짜 생성 (2015년 이후 생성된 APOD 데이터 기준)
+    function getRandomDate() {
+        const start = new Date(2015, 0, 1);
+        const end = new Date();
+        end.setDate(end.getDate() - 2); // 안전하게 이틀 전 날짜까지
+        const randomDate = new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime()));
+        return randomDate.toISOString().split('T')[0];
+    }
+
+    async function startQuiz() {
+        // UI 초기화
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('space-img').style.display = 'none';
+        document.getElementById('options').innerHTML = '';
+        document.getElementById('result').innerText = '';
+        document.getElementById('next-btn').style.display = 'none';
+
+        try {
+            const date = getRandomDate();
+            // NASA APOD 오픈 API 호출
+            const response = await fetch(`https://nasa.gov{date}`);
+            const data = await response.json();
+
+            // 동영상이거나 이미지가 없을 경우 다시 뽑기
+            if (data.media_type !== 'image' || !data.url) {
+                startQuiz();
+                return;
+            }
+
+            correctAnswer = data.title;
+            
+            // 이미지 표시
+            const imgElement = document.getElementById('space-img');
+            imgElement.src = data.url;
+            imgElement.style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+
+            // 보기 리스트 만들기 (정답 1개 + 오답 3개)
+            let filteredFake = fakeAnswers.filter(ans => ans !== correctAnswer);
+            let shuffledFake = filteredFake.sort(() => 0.5 - Math.random()).slice(0, 3);
+            let choices = [...shuffledFake, correctAnswer].sort(() => 0.5 - Math.random());
+
+            // 보기 버튼 생성
+            const optionsContainer = document.getElementById('options');
+            choices.forEach((choice, index) => {
+                const btn = document.createElement('button');
+                btn.innerText = `${index + 1}. ${choice}`;
+                btn.onclick = () => checkAnswer(choice, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+        } catch (error) {
+            console.error("데이터 로드 실패, 재시도합니다.", error);
+            startQuiz();
+        }
+    }
+
+    function checkAnswer(selected, selectedBtn) {
+        const buttons = document.querySelectorAll('#options button');
+        buttons.forEach(btn => btn.disabled = true); // 클릭 방지
+
+        const resultDiv = document.getElementById('result');
+        if (selected === correctAnswer) {
+            resultDiv.innerText = "🎉 정답입니다! 우주 전문가이시군요! 🧑‍🚀";
+            resultDiv.style.color = "#00ffa3";
+            selectedBtn.style.backgroundColor = "#006641";
+            selectedBtn.style.borderColor = "#00ffa3";
+        } else {
+            resultDiv.innerText = `❌ 틀렸습니다!\n정답은 [ ${correctAnswer} ] 입니다.`;
+            resultDiv.style.color = "#ff4d4d";
+            selectedBtn.style.backgroundColor = "#661c1c";
+            selectedBtn.style.borderColor = "#ff4d4d";
+        }
+
+        document.getElementById('next-btn').style.display = 'block';
+    }
+
+    // 페이지 접속 시 첫 게임 시작
+    window.onload = startQuiz;
+</script>
+
+</body>
+</html>
