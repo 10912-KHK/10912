@@ -122,5 +122,3 @@ html_code = """
 </html>
 """
 
-# 파이썬 웹 화면에 HTML 컴포넌트 띄우기
-components.html(html_code, height=650, scroller=True)
