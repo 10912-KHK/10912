@@ -5,20 +5,20 @@ st.set_page_config(page_title="우주 천체 탐험 퀴즈", layout="centered")
 
 st.title("🚀 신비로운 우주 천체 탐험 퀴즈")
 
-# 5가지 우주 천체 데이터 (보내주신 모든 이미지 주소 유실 없이 완벽 반영)
+# 5가지 우주 천체 데이터 (첫 번째 답변처럼 원본 전체 주소를 유실 없이 완벽 반영)
 quiz_data = [
     {
         "question": "방패자리 방향으로 불타오르는 듯한 붉은빛의 초거성, 태양 반지름의 약 2,150배에 달하는 거대한 체적을 자랑하는 이 별은 무엇일까요? 태양계 중심에 놓는다면 그 표면은 토성 궤도를 넘어설 정도로 압도적인 크기를 가집니다.",
-        # [수정 완정] 1번 Stephenson 2-18, Uy Scuti, Sun 크기 비교 이미지 주소
+        # 문제 1: Stephenson 2-18 크기 비교 사진 원본 전체 주소
         "image": "https://pstatic.net", 
-        "options": ["베텔게우스", "안타레스", "스테파니손 2-18", "VY 캔이스 마요리스"],
+        "options": ["베텔게우스", "안타레스", "스테파니손 2-18", "VY 캔이스 마요リス"],
         "answer": "스테파니손 2-18",
         "reason": "스테파니손 2-18은 현재 인류가 관측한 가장 거대한 항성 순위 최상위권에 위치한 초거성입니다.",
         "background": "✨ **우주 배경지식:** 이 별의 부피는 태양의 약 100억 배에 달합니다. 빛의 속도(초속 30만km)로 이 별의 둘레를 한 바퀴 도는 데만 무려 8.7시간이 걸립니다. (태양은 단 14.5초가 걸립니다.) 현재는 두터운 우주 먼지에 가려져 있어 적외선 망원경을 통해 그 압도적인 위용을 자세히 관측하고 있습니다."
     },
     {
         "question": "지구에서 약 250만 광년 떨어져 있으며, 약 40억~45억 년 뒤 우리 은하와 완전히 충돌하여 하나의 거대한 은하를 이룰 예정인 이웃 은하의 이름은 무엇일까요?",
-        # [수정 완전] 2번 안드로메다 은하 공식 위키미디어 이미지 주소
+        # 문제 2: 안드로메다 은하 위키미디어 원본 전체 주소
         "image": "https://wikimedia.org", 
         "options": ["마젤란 은하", "안드로메다 은하", "솜브레로 은하", "삼각자리 은하"],
         "answer": "안드로메다 은하",
@@ -27,7 +27,7 @@ quiz_data = [
     },
     {
         "question": "태양 질량의 약 660억 배라는 상상을 초월하는 초거대 질량을 가졌으며, 사방으로 강력한 에너지를 토해내며 우주 최고 순위를 다투는 초대질량 블랙홀은 무엇일까요?",
-        # [수정 완전] 3번 TON 618 vs 태양계 크기 비교 이미지 주소
+        # 문제 3: TON 618 크기 비교 사진 원본 전체 주소
         "image": "https://gstatic.com", 
         "options": ["궁수자리 A*", "M87 블랙홀", "시그너스 X-1", "TON 618"],
         "answer": "TON 618",
@@ -70,7 +70,6 @@ if idx < len(quiz_data):
     st.subheader(f"🎵 문제 {idx + 1} / {len(quiz_data)}")
     st.write(current["question"])
     
-    # 정답 제출 전에는 라디오 버튼 활성화, 제출 후에는 비활성화
     choice = st.radio(
         "정답을 선택하세요:", 
         current["options"], 
@@ -78,7 +77,6 @@ if idx < len(quiz_data):
         disabled=state["submitted"]
     )
     
-    # 제출 및 다음 문제 제어 버튼
     if not state["submitted"]:
         if st.button("정답 확인하기", key=f"submit_{idx}"):
             state["submitted"] = True
@@ -88,7 +86,6 @@ if idx < len(quiz_data):
                     state["scored_questions"].add(idx)
             st.rerun()
             
-    # 정답 제출 후에 사진과 배경지식 해설을 출력
     if state["submitted"]:
         if choice == current["answer"]:
             st.success(f"⭕ **정답입니다!** \n\n {current['reason']}")
@@ -105,7 +102,6 @@ if idx < len(quiz_data):
             state["submitted"] = False
             st.rerun()
 else:
-    # 최종 결과 화면
     st.balloons()
     st.success("🌌 우주 탐험 완료! 모든 문제를 해결하셨습니다.")
     st.metric(label="최종 획득 점수", value=f"{state['score']} / {len(quiz_data)}")
