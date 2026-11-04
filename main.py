@@ -5,20 +5,18 @@ st.set_page_config(page_title="우주 천체 탐험 퀴즈", layout="centered")
 
 st.title("🚀 신비로운 우주 천체 탐험 퀴즈")
 
-# 5가지 우주 천체 데이터 (첫 번째 답변처럼 원본 전체 주소를 유실 없이 완벽 반영)
+# 5가지 우주 천체 데이터 (보내주신 1번 및 3번 사진 주소 완벽 반영)
 quiz_data = [
     {
         "question": "방패자리 방향으로 불타오르는 듯한 붉은빛의 초거성, 태양 반지름의 약 2,150배에 달하는 거대한 체적을 자랑하는 이 별은 무엇일까요? 태양계 중심에 놓는다면 그 표면은 토성 궤도를 넘어설 정도로 압도적인 크기를 가집니다.",
-        # 문제 1: Stephenson 2-18 크기 비교 사진 원본 전체 주소
-        "image": "https://pstatic.net", 
-        "options": ["베텔게우스", "안타레스", "스테파니손 2-18", "VY 캔이스 마요リス"],
+        "image": "https://mblogthumb-phinf.pstatic.net/MjAyNDA2MThfNjUg/MDAxNzE4Njg5MTU0MjU4.Vz110f47LeoErFjCBw3AKFh7oVI862wf2pCm88Gdmtgg.yqz0u8PEg5cTDBglo6uKK94-MEguVOgjIMBXVKDFdD0g.JPEG/3.jpg?type=w800", # [반영] 보내주신 스테파니손 2-18 크기 비교 사진
+        "options": ["베텔게우스", "안타레스", "스테파니손 2-18", "VY 캔이스 마요리스"],
         "answer": "스테파니손 2-18",
         "reason": "스테파니손 2-18은 현재 인류가 관측한 가장 거대한 항성 순위 최상위권에 위치한 초거성입니다.",
         "background": "✨ **우주 배경지식:** 이 별의 부피는 태양의 약 100억 배에 달합니다. 빛의 속도(초속 30만km)로 이 별의 둘레를 한 바퀴 도는 데만 무려 8.7시간이 걸립니다. (태양은 단 14.5초가 걸립니다.) 현재는 두터운 우주 먼지에 가려져 있어 적외선 망원경을 통해 그 압도적인 위용을 자세히 관측하고 있습니다."
     },
     {
         "question": "지구에서 약 250만 광년 떨어져 있으며, 약 40억~45억 년 뒤 우리 은하와 완전히 충돌하여 하나의 거대한 은하를 이룰 예정인 이웃 은하의 이름은 무엇일까요?",
-        # 문제 2: 안드로메다 은하 위키미디어 원본 전체 주소
         "image": "https://wikimedia.org", 
         "options": ["마젤란 은하", "안드로메다 은하", "솜브레로 은하", "삼각자리 은하"],
         "answer": "안드로메다 은하",
@@ -27,8 +25,7 @@ quiz_data = [
     },
     {
         "question": "태양 질량의 약 660억 배라는 상상을 초월하는 초거대 질량을 가졌으며, 사방으로 강력한 에너지를 토해내며 우주 최고 순위를 다투는 초대질량 블랙홀은 무엇일까요?",
-        # 문제 3: TON 618 크기 비교 사진 원본 전체 주소
-        "image": "https://gstatic.com", 
+        "image": "https://gstatic.com", # [반영] 이전에 보내주신 TON 618 크기 비교 사진
         "options": ["궁수자리 A*", "M87 블랙홀", "시그너스 X-1", "TON 618"],
         "answer": "TON 618",
         "reason": "TON 618은 현재까지 인류가 발견한 블랙홀 중 가장 무겁고 거대한 규모를 가집니다.",
@@ -36,7 +33,7 @@ quiz_data = [
     },
     {
         "question": "허블과 제임스 웹 우주망원경이 포착한 가장 경이로운 우주 풍경 중 하나인 '창조의 기둥(Pillars of Creation)'입니다. 독수리 성운(M16) 내부에 위치한 이 가스 기둥은 지구로부터 약 6,500광년 떨어져 있습니다. 주로 어떤 성분으로 이루어져 있을까요?",
-        "image": "https://unsplash.com", 
+        "image": "https://wikimedia.org", 
         "options": ["고온의 플라즈마와 철 입자", "액체 메탄과 얼음 결정", "차가운 수소 가스와 우주 먼지", "산소 가스와 규산염 암석"],
         "answer": "차가운 수소 가스와 우주 먼지",
         "reason": "창조의 기둥은 차가운 가스와 성간 먼지들이 중력으로 뭉치며 끊임없이 아기 별들이 태어나는 요람입니다.",
@@ -44,7 +41,7 @@ quiz_data = [
     },
     {
         "question": "천칭자리 방향에 위치하며 은빛으로 고요하게 빛나는 HD 140283입니다. 나이가 무려 약 135억 년으로 추정되어 빅뱅 직후 우주 초기 환경의 비밀을 고스란히 간직하고 있는 이 최고령 별의 별명은 무엇일까요?",
-        "image": "https://unsplash.com", 
+        "image": "https://wikimedia.org", 
         "options": ["므두셀라 별 (HD 140283)", "프록시마", "폴라리스", "리겔"],
         "answer": "므두셀라 별 (HD 140283)",
         "reason": "우주 전체 나이(약 138억 년) 직후에 태어나 우주 역사상 최고령 나이 순위를 자랑하며 성경 속 인물의 이름을 땄습니다.",
@@ -70,6 +67,7 @@ if idx < len(quiz_data):
     st.subheader(f"🎵 문제 {idx + 1} / {len(quiz_data)}")
     st.write(current["question"])
     
+    # 정답 제출 전에는 라디오 버튼 활성화, 제출 후에는 비활성화
     choice = st.radio(
         "정답을 선택하세요:", 
         current["options"], 
@@ -77,6 +75,7 @@ if idx < len(quiz_data):
         disabled=state["submitted"]
     )
     
+    # 제출 및 다음 문제 제어 버튼
     if not state["submitted"]:
         if st.button("정답 확인하기", key=f"submit_{idx}"):
             state["submitted"] = True
@@ -86,6 +85,7 @@ if idx < len(quiz_data):
                     state["scored_questions"].add(idx)
             st.rerun()
             
+    # 정답 제출 후에 사진과 배경지식 해설을 출력
     if state["submitted"]:
         if choice == current["answer"]:
             st.success(f"⭕ **정답입니다!** \n\n {current['reason']}")
@@ -102,6 +102,7 @@ if idx < len(quiz_data):
             state["submitted"] = False
             st.rerun()
 else:
+    # 최종 결과 화면
     st.balloons()
     st.success("🌌 우주 탐험 완료! 모든 문제를 해결하셨습니다.")
     st.metric(label="최종 획득 점수", value=f"{state['score']} / {len(quiz_data)}")
