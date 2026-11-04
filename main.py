@@ -5,11 +5,11 @@ st.set_page_config(page_title="우주 천체 탐험 퀴즈", layout="centered")
 
 st.title("🚀 신비로운 우주 천체 탐험 퀴즈")
 
-# 5가지 우주 천체 데이터 (사진과 깊이 있는 배경지식 설명 추가)
+# 5가지 우주 천체 데이터 (보내주신 1번 및 3번 사진 주소 완벽 반영)
 quiz_data = [
     {
         "question": "방패자리 방향으로 불타오르는 듯한 붉은빛의 초거성, 태양 반지름의 약 2,150배에 달하는 거대한 체적을 자랑하는 이 별은 무엇일까요? 태양계 중심에 놓는다면 그 표면은 토성 궤도를 넘어설 정도로 압도적인 크기를 가집니다.",
-        "image": "https://wikimedia.org", 
+        "image": "https://mblogthumb-phinf.pstatic.net/MjAyNDA2MThfNjUg/MDAxNzE4Njg5MTU0MjU4.Vz110f47LeoErFjCBw3AKFh7oVI862wf2pCm88Gdmtgg.yqz0u8PEg5cTDBglo6uKK94-MEguVOgjIMBXVKDFdD0g.JPEG/3.jpg?type=w800", # [반영] 보내주신 스테파니손 2-18 크기 비교 사진
         "options": ["베텔게우스", "안타레스", "스테파니손 2-18", "VY 캔이스 마요리스"],
         "answer": "스테파니손 2-18",
         "reason": "스테파니손 2-18은 현재 인류가 관측한 가장 거대한 항성 순위 최상위권에 위치한 초거성입니다.",
@@ -25,11 +25,11 @@ quiz_data = [
     },
     {
         "question": "태양 질량의 약 660억 배라는 상상을 초월하는 초거대 질량을 가졌으며, 사방으로 강력한 에너지를 토해내며 우주 최고 순위를 다투는 초대질량 블랙홀은 무엇일까요?",
-        "image": "https://wikimedia.org", 
+        "image": "https://gstatic.com", # [반영] 이전에 보내주신 TON 618 크기 비교 사진
         "options": ["궁수자리 A*", "M87 블랙홀", "시그너스 X-1", "TON 618"],
         "answer": "TON 618",
         "reason": "TON 618은 현재까지 인류가 발견한 블랙홀 중 가장 무겁고 거대한 규모를 가집니다.",
-        "background": "✨ **우주 배경지식:** TON 618은 사실 블랙홀 자체가 직접 관측된 것이 아니라, 블랙홀 주변의 가스가 광속에 가까운 속도로 회전하며 엄청난 빛을 내뿜는 '퀘이사(Quasar)' 형태로 발견되었습니다. 이 퀘이사가 내뿜는 밝기는 태양 140조 개를 합친 것과 맞먹으며, 그 중심의 블랙홀 크기(사건의 지평선 지름)는 태양에서 명왕성까지 거리의 약 11배에 달합니다."
+        "background": "✨ **우주 배경지식:** TON 618은 사실 블랙홀 자체가 직접 관측된 것이 아니라, 블랙홀 주변의 가스가 광속에 가까운 속도로 회전하며 엄청난 빛을 내뿜는 '퀘이사(Quasar)' 형태로 발견되었습니다. 이미지에서 보시다시피 중심부 블랙홀의 크기(사건의 지평선 지름)는 우리 태양계 전체 크기의 무려 30~40배에 달할 정도로 상상을 초월하는 규모입니다."
     },
     {
         "question": "허블과 제임스 웹 우주망원경이 포착한 가장 경이로운 우주 풍경 중 하나인 '창조의 기둥(Pillars of Creation)'입니다. 독수리 성운(M16) 내부에 위치한 이 가스 기둥은 지구로부터 약 6,500광년 떨어져 있습니다. 주로 어떤 성분으로 이루어져 있을까요?",
@@ -85,16 +85,15 @@ if idx < len(quiz_data):
                     state["scored_questions"].add(idx)
             st.rerun()
             
-    # 🛠️ 변경 포인트: 정답을 제출한 '후'에만 사진과 배경지식 해설을 출력
+    # 정답 제출 후에 사진과 배경지식 해설을 출력
     if state["submitted"]:
         if choice == current["answer"]:
             st.success(f"⭕ **정답입니다!** \n\n {current['reason']}")
         else:
             st.error(f"❌ **오답입니다!** 정답은 **[{current['answer']}]** 입니다. \n\n {current['reason']}")
         
-        # 가독성을 높이기 위해 시각적 구분선 추가 및 사진/배경지식 노출
         st.divider()
-        st.image(current["image"], caption=f"📷 {current['answer']}의 실제 관측 이미지", use_container_width=True)
+        st.image(current["image"], caption=f"📷 {current['answer']} 관련 이미지", use_container_width=True)
         st.info(current["background"])
         st.divider()
             
